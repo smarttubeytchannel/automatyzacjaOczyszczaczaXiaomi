@@ -1,4 +1,111 @@
 # kod przeznaczony do pliku configuration
 
+sensor:
+  - platform: template
+    sensors:
+      air_purifier_aqi:
+        value_template: "{{ states.fan.xiaomi_miio_device.attributes.aqi }}"
+        friendly_name: Air purifier AQI
+        unit_of_measurement: AQI
+      air_purifier_temp:
+        value_template: "{{ states.fan.xiaomi_miio_device.attributes.temperature }}"
+        friendly_name: Air purifier Temperature
+        unit_of_measurement: C
+      air_purifier_hum:
+        value_template: "{{ states.fan.xiaomi_miio_device.attributes.humidity }}"
+        friendly_name: Air purifier Humidity
+        unit_of_measurement: "%"
+      air_purifier_mode:
+        value_template: "{{ states.fan.xiaomi_miio_device.attributes.mode }}"
+        friendly_name: Air purifier Mode
+      air_purifier_fl:
+        value_template: "{{ states.fan.xiaomi_miio_device.attributes.favorite_level }}"
+        friendly_name: Air purifier Favorite Level
+      air_purifier_ms:
+        value_template: "{{ states.fan.xiaomi_miio_device.attributes.motor_speed }}"
+        friendly_name: Air purifier Motor Speed
+      air_purifier_volume:
+        value_template: "{{ states.fan.xiaomi_miio_device.attributes.volume }}"
+        friendly_name: Air purifier Volume
+      air_purifier_purify_volume:
+        value_template: "{{ states.fan.xiaomi_miio_device.attributes.purify_volume }}"
+        friendly_name: Air purifier Purify Volume
+      air_purifier_sleep_time:
+        value_template: "{{ states.fan.xiaomi_miio_device.attributes.sleep_time }}"
+        friendly_name: Air purifier Sleep Time
+      air_purifier_use_time:
+        value_template: "{{ states.fan.xiaomi_miio_device.attributes.use_time }}"
+        friendly_name: Air purifier Use Time
+      air_purifier_illuminance:
+        value_template: "{{ states.fan.xiaomi_miio_device.attributes.illuminance }}"
+        friendly_name: Air purifier Illuminance
+      air_purifier_motor2_speed:
+        value_template: "{{ states.fan.xiaomi_miio_device.attributes.motor2_speed }}"
+        friendly_name: Air purifier Motor Two Speed
+        
 
 # kod przeznaczony do pliku automation
+
+- alias: Turn off air purifier
+  trigger:
+    platform: numeric_state
+    entity_id: fan.xiaomi_miio_device
+    value_template: "{{ states.fan.xiaomi_miio_device.attributes.aqi | int }}"
+    below: 10
+  condition:
+    - condition: state
+      entity_id: 'fan.xiaomi_miio_device'
+      state: 'on'
+  action:
+    service: fan.turn_off
+    entity_id: fan.xiaomi_miio_device
+
+- alias: Turn on air purifier
+  trigger:
+    platform: numeric_state
+    entity_id: fan.xiaomi_miio_device
+    value_template: "{{ states.fan.xiaomi_miio_device.attributes.aqi | int }}"
+    above: 20
+  condition:
+    - condition: state
+      entity_id: 'fan.xiaomi_miio_device'
+      state: 'off'
+  action:
+    - service: fan.turn_on
+      entity_id: fan.xiaomi_miio_device
+    - service: fan.speed
+      entity_id: fan.xiaomi_miio_device
+      data:
+        speed: favorite
+
+- alias: Set favorite fan speed for air purifier
+  trigger:
+    platform: time_pattern
+    minutes: '/5'
+    seconds: 00
+  condition:
+    - condition: state
+      entity_id: 'fan.xiaomi_miio_device'
+      state: 'on'
+  action:
+    - service: fan.set_speed
+      entity_id: fan.xiaomi_miio_device
+      data:
+        speed: favorite
+    - service: fan.xiaomi_miio_set_favorite_level
+      data_template:
+        entity_id: fan.xiaomi_miio_device
+        level: >
+            {% if states.fan.xiaomi_miio_device.attributes.aqi | int > 30 %}
+              15
+            {% elif states.fan.xiaomi_miio_device.attributes.aqi | int > 25 %}
+              10
+            {% elif states.fan.xiaomi_miio_device.attributes.aqi | int > 20 %}
+              5
+            {% elif states.fan.xiaomi_miio_device.attributes.aqi | int > 15 %}
+              3
+            {% elif states.fan.xiaomi_miio_device.attributes.aqi | int > 5 %}
+              1
+            {% else %}
+              1
+            {% endif %}
