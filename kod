@@ -1,5 +1,10 @@
 # kod przeznaczony do pliku configuration
 
+fan:
+  - platform: xiaomi_miio
+    host: tutajWpiszAdresIPoczyszczacza
+    token: tutajTrzebaWpisacToken32znaki
+
 sensor:
   - platform: template
     sensors:
